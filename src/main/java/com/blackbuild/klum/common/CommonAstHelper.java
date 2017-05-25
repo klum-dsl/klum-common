@@ -40,7 +40,9 @@ import java.util.*;
 
 import static groovyjarjarasm.asm.Opcodes.ACC_ABSTRACT;
 import static org.codehaus.groovy.ast.ClassHelper.makeWithoutCaching;
+import static org.codehaus.groovy.ast.expr.CastExpression.asExpression;
 import static org.codehaus.groovy.ast.tools.GeneralUtils.*;
+import static org.codehaus.groovy.ast.tools.GenericsUtils.makeClassSafe;
 
 /**
  * Created by stephan on 05.12.2016.
@@ -278,6 +280,23 @@ public class CommonAstHelper {
 
     public static String getNullSafeMemberStringValue(AnnotationNode fieldAnnotation, String value, String name) {
         return fieldAnnotation == null ? name : AbstractASTTransformation.getMemberStringValue(fieldAnnotation, value, name);
+    }
+
+    public static void initializeCollectionOrMap(FieldNode fieldNode) {
+        ClassNode fieldType = fieldNode.getType();
+        if (isCollection(fieldType))
+            initializeField(fieldNode, asExpression(fieldType, new ListExpression()));
+        else if (fieldType.equals(CommonAstHelper.SORTED_MAP_TYPE))
+            initializeField(fieldNode, ctorX(makeClassSafe(TreeMap.class)));
+        else if (isMap(fieldType))
+            initializeField(fieldNode, asExpression(fieldType, new MapExpression()));
+        else
+            throw new IllegalStateException("FieldNode " + fieldNode + " is no collection or Map");
+    }
+
+    private static void initializeField(FieldNode fieldNode, Expression init) {
+        if (!fieldNode.hasInitialExpression())
+            fieldNode.setInitialValueExpression(init);
     }
 
     public static String getQualifiedName(FieldNode node) {
