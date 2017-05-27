@@ -266,12 +266,6 @@ public abstract class GenericsMethodBuilder<T extends GenericsMethodBuilder> {
         return (T)this;
     }
 
-    public T optionalAssignModelToPropertyS(String target, String targetProperty) {
-        if (targetProperty != null)
-            return callMethod(varX(target), "$set" + Verifier.capitalize(targetProperty), varX("_model"));
-        return (T)this;
-    }
-
     public T declareVariable(String varName, Expression init) {
         return statement(GeneralUtils.declS(varX(varName), init));
     }
