@@ -26,6 +26,7 @@ package com.blackbuild.klum.common;
 import org.codehaus.groovy.ast.*;
 import org.codehaus.groovy.ast.expr.*;
 import org.codehaus.groovy.ast.stmt.BlockStatement;
+import org.codehaus.groovy.ast.stmt.ExpressionStatement;
 import org.codehaus.groovy.ast.stmt.Statement;
 import org.codehaus.groovy.classgen.Verifier;
 import org.codehaus.groovy.control.SourceUnit;
@@ -39,6 +40,7 @@ import org.codehaus.groovy.transform.AbstractASTTransformation;
 import java.util.*;
 
 import static groovyjarjarasm.asm.Opcodes.ACC_ABSTRACT;
+import static org.codehaus.groovy.ast.ClassHelper.STRING_TYPE;
 import static org.codehaus.groovy.ast.ClassHelper.makeWithoutCaching;
 import static org.codehaus.groovy.ast.expr.CastExpression.asExpression;
 import static org.codehaus.groovy.ast.tools.GeneralUtils.*;
@@ -132,16 +134,34 @@ public class CommonAstHelper {
         sourceUnit.getErrorCollector().addFatalError(new SyntaxErrorMessage(se, sourceUnit));
     }
 
-    public static void addCompileError(String msg, FieldNode node) {
-        SyntaxException se = new SyntaxException(msg, node.getLineNumber(), node.getColumnNumber());
-        SourceUnit sourceUnit = node.getOwner().getModule().getContext();
-        sourceUnit.getErrorCollector().addFatalError(new SyntaxErrorMessage(se, sourceUnit));
+    public static void addCompileError(String msg, AnnotatedNode node) {
+        addCompileError(msg, node, node);
     }
 
+    public static void addCompileError(String msg, AnnotatedNode node, ASTNode sourcePosition) {
+        if (node instanceof FieldNode)
+            addCompileError(msg, (FieldNode) node);
+        else if (node instanceof ClassNode)
+            addCompileError(msg, (ClassNode) node);
+        else
+            throw new IllegalStateException(node.toString() + " must be either a ClassNode or a FieldNode");
+    }
+
+    public static void addCompileError(String msg, FieldNode node) {
+        addCompileError(msg, node, node);
+    }
+
+
     public static void addCompileError(String msg, FieldNode node, ASTNode sourcePosition) {
-        SyntaxException se = new SyntaxException(msg, sourcePosition.getLineNumber(), sourcePosition.getColumnNumber());
-        SourceUnit sourceUnit = node.getOwner().getModule().getContext();
-        sourceUnit.getErrorCollector().addFatalError(new SyntaxErrorMessage(se, sourceUnit));
+        addCompileError(node.getOwner().getModule().getContext(), msg, sourcePosition);
+    }
+
+    public static void addCompileError(String msg, ClassNode node) {
+        addCompileError(msg, node, node);
+    }
+
+    public static void addCompileError(String msg, ClassNode node, ASTNode sourcePosition) {
+        addCompileError(node.getModule().getContext(), msg, sourcePosition);
     }
 
     public static void addCompileWarning(SourceUnit sourceUnit, String msg, ASTNode node) {
@@ -302,4 +322,50 @@ public class CommonAstHelper {
     public static String getQualifiedName(FieldNode node) {
         return node.getOwner().getName() + "." + node.getName();
     }
+
+    public static MapExpression getLiteralMapExpressionFromClosure(ClosureExpression closure) {
+        BlockStatement code = (BlockStatement) closure.getCode();
+        if (code.getStatements().size() != 1) return null;
+        Statement statement = code.getStatements().get(0);
+        if (!(statement instanceof ExpressionStatement)) return null;
+        Expression expression = ((ExpressionStatement) statement).getExpression();
+        if (!(expression instanceof MapExpression)) return null;
+        return (MapExpression) expression;
+    }
+
+    public static Map<String, ClassNode> getStringClassMapFromClosure(ClosureExpression closureExpression, AnnotatedNode source) {
+        MapExpression map = getLiteralMapExpressionFromClosure(closureExpression);
+        if (map == null)
+            return null;
+
+        Map<String, ClassNode> result = new LinkedHashMap<String, ClassNode>();
+
+        for (MapEntryExpression entry : map.getMapEntryExpressions()) {
+            String key = getKeyStringFromLiteralMapEntry(entry, source);
+            ClassNode value = getClassNodeValueFromLiteralMapEntry(entry, source);
+
+            result.put(key, value);
+        }
+
+        return result;
+    }
+
+    public static String getKeyStringFromLiteralMapEntry(MapEntryExpression entryExpression, AnnotatedNode source) {
+        Expression result = entryExpression.getKeyExpression();
+        if (result instanceof ConstantExpression && result.getType().equals(STRING_TYPE))
+            return result.getText();
+
+        CommonAstHelper.addCompileError("Map keys may only be Strings.", source, entryExpression);
+        return null;
+    }
+
+    public static ClassNode getClassNodeValueFromLiteralMapEntry(MapEntryExpression entryExpression, AnnotatedNode source) {
+        Expression result = entryExpression.getValueExpression();
+        if (result instanceof ClassExpression)
+            return result.getType();
+
+        CommonAstHelper.addCompileError("Map values may only be classes.", source, entryExpression);
+        return null;
+    }
+
 }
