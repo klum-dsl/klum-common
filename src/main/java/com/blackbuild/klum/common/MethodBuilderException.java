@@ -26,7 +26,7 @@ package com.blackbuild.klum.common;
 import org.codehaus.groovy.ast.ASTNode;
 
 public class MethodBuilderException extends RuntimeException {
-    private final ASTNode node;
+    private final transient ASTNode node;
 
     public MethodBuilderException(String message, ASTNode node) {
         super(message);
