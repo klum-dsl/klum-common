@@ -96,3 +96,4 @@ afterEvaluate {
 }
 
 tasks.release.dependsOn 'build'
+tasks.postRelease.dependsOn 'publish'
