@@ -35,7 +35,6 @@ import org.codehaus.groovy.ast.stmt.ForStatement;
 import org.codehaus.groovy.ast.stmt.Statement;
 import org.codehaus.groovy.ast.tools.GeneralUtils;
 import org.codehaus.groovy.ast.tools.GenericsUtils;
-import org.codehaus.groovy.classgen.Verifier;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -208,11 +207,9 @@ public abstract class GenericsMethodBuilder<T extends GenericsMethodBuilder> {
     }
 
     public T delegatingClosureParam(ClassNode delegationTarget, ClosureDefaultValue defaultValue) {
-        VariableScope scope = new VariableScope();
         ClosureExpression emptyClosure = null;
         if (defaultValue == ClosureDefaultValue.EMPTY_CLOSURE) {
-            emptyClosure = new ClosureExpression(Parameter.EMPTY_ARRAY, new BlockStatement(new ArrayList<Statement>(), scope));
-            emptyClosure.setVariableScope(scope);
+            emptyClosure = closureX(block());
         }
         Parameter param = GeneralUtils.param(
                 nonGeneric(ClassHelper.CLOSURE_TYPE),
@@ -318,13 +315,6 @@ public abstract class GenericsMethodBuilder<T extends GenericsMethodBuilder> {
 
     public T doReturn(Expression expression) {
         return statement(returnS(expression));
-    }
-
-    VariableScope getVariableScope() {
-        if (body == null)
-            body = new BlockStatement();
-
-        return body.getVariableScope();
     }
 
     public T linkToField(FieldNode fieldNode) {

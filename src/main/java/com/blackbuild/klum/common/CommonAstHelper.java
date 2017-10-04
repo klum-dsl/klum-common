@@ -77,16 +77,6 @@ public class CommonAstHelper {
         return (classNode.getModifiers() & ACC_ABSTRACT) != 0;
     }
 
-    public static ClosureExpression createClosureExpression(Parameter[] parameters, Statement... code) {
-        ClosureExpression result = new ClosureExpression(parameters, new BlockStatement(code, new VariableScope()));
-        result.setVariableScope(new VariableScope());
-        return result;
-    }
-
-    public static ClosureExpression createClosureExpression(Statement... code) {
-        return createClosureExpression(Parameter.EMPTY_ARRAY, code);
-    }
-
     public static ListExpression listExpression(Expression... expressions) {
         return new ListExpression(Arrays.asList(expressions));
     }
@@ -188,15 +178,12 @@ public class CommonAstHelper {
 
     public static ClosureExpression toStronglyTypedClosure(ClosureExpression validationClosure, ClassNode fieldNodeType) {
         String closureParameterName = validationClosure.isParameterSpecified() ? validationClosure.getParameters()[0].getName() : "it";
-        ClosureExpression typeValidationClosure = new ClosureExpression(params(param(fieldNodeType, closureParameterName)), validationClosure.getCode());
-        typeValidationClosure.setVariableScope(new VariableScope());
+        ClosureExpression typeValidationClosure = closureX(params(param(fieldNodeType, closureParameterName)), validationClosure.getCode());
         typeValidationClosure.copyNodeMetaData(validationClosure);
         typeValidationClosure.setSourcePosition(validationClosure);
-        validationClosure = typeValidationClosure;
 
-        validationClosure.setVariableScope(new VariableScope());
-        validationClosure.visit(new StronglyTypingClosureParameterVisitor(closureParameterName, fieldNodeType));
-        return validationClosure;
+        typeValidationClosure.visit(new StronglyTypingClosureParameterVisitor(closureParameterName, fieldNodeType));
+        return typeValidationClosure;
     }
 
     static void addPropertyAsFieldWithAccessors(ClassNode cNode, PropertyNode pNode) {
