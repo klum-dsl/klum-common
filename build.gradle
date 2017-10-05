@@ -39,7 +39,7 @@ sourceCompatibility = JavaVersion.VERSION_1_7
 targetCompatibility = JavaVersion.VERSION_1_7
 
 repositories {
-    mavenCentral()
+    jcenter()
 }
 
 jacoco {
@@ -85,7 +85,7 @@ bintray {
                 passphrase = findProperty("signing.password")
             }
             mavenCentralSync {
-                sync = false // !version.toString().contains(".dev+")
+                sync = !version.toString().contains(".dev+")
                 user = findProperty("nexusUsername")
                 password = findProperty("nexusPassword")
             }
