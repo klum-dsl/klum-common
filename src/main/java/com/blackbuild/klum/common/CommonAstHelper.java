@@ -285,8 +285,24 @@ public class CommonAstHelper {
         else return null;
     }
 
-    public static String getNullSafeMemberStringValue(AnnotationNode fieldAnnotation, String value, String name) {
-        return fieldAnnotation == null ? name : AbstractASTTransformation.getMemberStringValue(fieldAnnotation, value, name);
+    public static String getNullSafeMemberStringValue(AnnotationNode fieldAnnotation, String name, String defaultValue) {
+        return fieldAnnotation == null ? defaultValue : AbstractASTTransformation.getMemberStringValue(fieldAnnotation, name, defaultValue);
+    }
+
+    public static <T extends Enum> T getNullSafeEnumMemberValue(AnnotationNode node, String name, T defaultValue) {
+        if (node == null)
+            return defaultValue;
+
+        Expression member = node.getMember(name);
+        if (member == null)
+            return defaultValue;
+
+        if (!(member instanceof PropertyExpression))
+            return defaultValue;
+
+        String value = ((PropertyExpression) member).getPropertyAsString();
+
+        return (T) Enum.valueOf(defaultValue.getClass(), value);
     }
 
     public static void initializeCollectionOrMap(FieldNode fieldNode) {
