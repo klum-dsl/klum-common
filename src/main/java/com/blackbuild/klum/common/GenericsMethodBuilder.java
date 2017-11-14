@@ -25,7 +25,14 @@ package com.blackbuild.klum.common;
 
 import groovy.lang.Closure;
 import groovy.lang.DelegatesTo;
-import org.codehaus.groovy.ast.*;
+import org.codehaus.groovy.ast.ASTNode;
+import org.codehaus.groovy.ast.AnnotationNode;
+import org.codehaus.groovy.ast.ClassHelper;
+import org.codehaus.groovy.ast.ClassNode;
+import org.codehaus.groovy.ast.FieldNode;
+import org.codehaus.groovy.ast.GenericsType;
+import org.codehaus.groovy.ast.MethodNode;
+import org.codehaus.groovy.ast.Parameter;
 import org.codehaus.groovy.ast.expr.ClosureExpression;
 import org.codehaus.groovy.ast.expr.Expression;
 import org.codehaus.groovy.ast.expr.MethodCallExpression;
@@ -43,8 +50,19 @@ import java.util.Map;
 
 import static org.codehaus.groovy.ast.ClassHelper.CLASS_Type;
 import static org.codehaus.groovy.ast.ClassHelper.make;
-import static org.codehaus.groovy.ast.tools.GeneralUtils.*;
-import static org.codehaus.groovy.ast.tools.GenericsUtils.*;
+import static org.codehaus.groovy.ast.tools.GeneralUtils.args;
+import static org.codehaus.groovy.ast.tools.GeneralUtils.block;
+import static org.codehaus.groovy.ast.tools.GeneralUtils.callX;
+import static org.codehaus.groovy.ast.tools.GeneralUtils.classX;
+import static org.codehaus.groovy.ast.tools.GeneralUtils.closureX;
+import static org.codehaus.groovy.ast.tools.GeneralUtils.constX;
+import static org.codehaus.groovy.ast.tools.GeneralUtils.propX;
+import static org.codehaus.groovy.ast.tools.GeneralUtils.returnS;
+import static org.codehaus.groovy.ast.tools.GeneralUtils.stmt;
+import static org.codehaus.groovy.ast.tools.GeneralUtils.varX;
+import static org.codehaus.groovy.ast.tools.GenericsUtils.buildWildcardType;
+import static org.codehaus.groovy.ast.tools.GenericsUtils.makeClassSafeWithGenerics;
+import static org.codehaus.groovy.ast.tools.GenericsUtils.nonGeneric;
 
 @SuppressWarnings("unchecked")
 public abstract class GenericsMethodBuilder<T extends GenericsMethodBuilder> {
@@ -230,7 +248,7 @@ public abstract class GenericsMethodBuilder<T extends GenericsMethodBuilder> {
             result.setMember("value", classX(target));
         else
             result.setMember("genericTypeIndex", constX(0));
-        result.setMember("strategy", constX(Closure.DELEGATE_FIRST));
+        result.setMember("strategy", constX(Closure.DELEGATE_ONLY));
         return result;
     }
 
