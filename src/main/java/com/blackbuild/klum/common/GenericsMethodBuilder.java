@@ -224,7 +224,16 @@ public abstract class GenericsMethodBuilder<T extends GenericsMethodBuilder> {
         return (T)this;
     }
 
+
     public T delegatingClosureParam(ClassNode delegationTarget, ClosureDefaultValue defaultValue) {
+        return delegatingClosureParam(delegationTarget, defaultValue, Closure.DELEGATE_ONLY);
+    }
+
+    public T passThroughClosureParam(ClassNode delegationTarget, ClosureDefaultValue defaultValue) {
+        return delegatingClosureParam(delegationTarget, defaultValue, Closure.OWNER_ONLY);
+    }
+
+    public T delegatingClosureParam(ClassNode delegationTarget, ClosureDefaultValue defaultValue, int delegationStrategy) {
         ClosureExpression emptyClosure = null;
         if (defaultValue == ClosureDefaultValue.EMPTY_CLOSURE) {
             emptyClosure = closureX(block());
@@ -234,7 +243,7 @@ public abstract class GenericsMethodBuilder<T extends GenericsMethodBuilder> {
                 "closure",
                 emptyClosure
         );
-        param.addAnnotation(createDelegatesToAnnotation(delegationTarget));
+        param.addAnnotation(createDelegatesToAnnotation(delegationTarget, delegationStrategy));
         return param(param);
     }
 
@@ -242,14 +251,14 @@ public abstract class GenericsMethodBuilder<T extends GenericsMethodBuilder> {
         return delegatingClosureParam(null, ClosureDefaultValue.EMPTY_CLOSURE);
     }
 
-    private AnnotationNode createDelegatesToAnnotation(ClassNode target) {
-        AnnotationNode result = new AnnotationNode(DELEGATES_TO_ANNOTATION);
+    public AnnotationNode createDelegatesToAnnotation(ClassNode target, int strategy) {
+        AnnotationNode annotation = new AnnotationNode(DELEGATES_TO_ANNOTATION);
         if (target != null)
-            result.setMember("value", classX(target));
+            annotation.setMember("value", classX(target));
         else
-            result.setMember("genericTypeIndex", constX(0));
-        result.setMember("strategy", constX(Closure.DELEGATE_ONLY));
-        return result;
+            annotation.setMember("genericTypeIndex", constX(0));
+        annotation.setMember("strategy", constX(strategy));
+        return annotation;
     }
 
     public T statement(Statement statement) {
