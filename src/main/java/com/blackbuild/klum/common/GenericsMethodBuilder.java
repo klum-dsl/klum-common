@@ -87,6 +87,14 @@ public abstract class GenericsMethodBuilder<T extends GenericsMethodBuilder> {
         this.name = name;
     }
 
+    /**
+     * Creates the actual method and adds it to the target class. If the target already contains a method with that
+     * signature, either an exception is thrown or the method is silently dropped, depending on the presence of
+     * the optional parameter.
+     * @param target The class node to add to
+     * @return The newly created method or the existing method if `optional` is set and a method with that signature
+     * already exists
+     */
     @SuppressWarnings("ToArrayCallWithZeroLengthArrayArgument")
     public MethodNode addTo(ClassNode target) {
 
@@ -123,21 +131,34 @@ public abstract class GenericsMethodBuilder<T extends GenericsMethodBuilder> {
         return method;
     }
 
+    /**
+     * Marks this method as optional. If set, {@link #addTo(ClassNode)} does not throw an error if the method already exists.
+     */
     public T optional() {
         this.optional = true;
         return (T)this;
     }
 
+    /**
+     * Sets the return type of the generated method.
+     * @param returnType The return type.
+     */
     public T returning(ClassNode returnType) {
         this.returnType = returnType;
         return (T)this;
     }
 
+    /**
+     * Sets the modifiers as defined by {@link groovyjarjarasm.asm.Opcodes}.
+     */
     public T mod(int modifier) {
         modifiers |= modifier;
         return (T)this;
     }
 
+    /**
+     * Add a parameter to the method.
+     */
     public T param(Parameter param) {
         parameters.add(param);
         return (T)this;
@@ -148,12 +169,19 @@ public abstract class GenericsMethodBuilder<T extends GenericsMethodBuilder> {
         return (T)this;
     }
 
+    /**
+     * Adds a map entry to the method signature.
+     */
     public T namedParams(String name) {
         GenericsType wildcard = new GenericsType(ClassHelper.OBJECT_TYPE);
         wildcard.setWildcard(true);
         return param(makeClassSafeWithGenerics(ClassHelper.MAP_TYPE, new GenericsType(ClassHelper.STRING_TYPE), wildcard), name);
     }
 
+    /**
+     * Adds a statement to the method body that converts each entry in the map into a call of a method with the key as
+     * methodname and the value as method parameter.
+     */
     public T applyNamedParams(String parameterMapName) {
         statement(
                 new ForStatement(new Parameter(ClassHelper.DYNAMIC_TYPE, "it"), callX(varX(parameterMapName), "entrySet"),
@@ -170,70 +198,134 @@ public abstract class GenericsMethodBuilder<T extends GenericsMethodBuilder> {
         return (T)this;
     }
 
+    /**
+     * Adds a parameter of type closure.
+     */
     public T closureParam(String name) {
         param(GeneralUtils.param(GenericsUtils.nonGeneric(ClassHelper.CLOSURE_TYPE), name));
         return (T)this;
     }
 
+    /**
+     * Adds a class parameter which is also used as the target for the {@link DelegatesTo} annotation of a delegating closure parameter
+     * @param name Name of the parameter
+     * @param upperBound The base class for the class parameter
+     */
     public T delegationTargetClassParam(String name, ClassNode upperBound) {
         Parameter param = GeneralUtils.param(makeClassSafeWithGenerics(CLASS_Type, buildWildcardType(upperBound)), name);
         param.addAnnotation(new AnnotationNode(DELEGATES_TO_TARGET_ANNOTATION));
         return param(param);
     }
 
+    /**
+     * Adds a class parameter without delegation.
+     * @param name The name of the parameter
+     * @param upperBound The base class for the class parameter
+     * @return
+     */
     public T simpleClassParam(String name, ClassNode upperBound) {
         return param(makeClassSafeWithGenerics(CLASS_Type, buildWildcardType(upperBound)), name);
     }
 
+    /**
+     * Adds a string paramter with the given name.
+     * @param name The name of the string parameter.
+     */
     public T stringParam(String name) {
         return param(ClassHelper.STRING_TYPE, name);
     }
 
+    /**
+     * Convenience method to optionally add a string parameter. The parameter is only added, if 'addIfNotNull' is not null.
+     * @param name The name of the parameter.
+     * @param addIfNotNull If this parameter is null, the method does nothing
+     */
     public T optionalStringParam(String name, Object addIfNotNull) {
         if (addIfNotNull != null)
             stringParam(name);
         return (T)this;
     }
 
+    /**
+     * Add a generic object parameter.
+     * @param name The name of the parameter
+     */
     public T objectParam(String name) {
         return param(ClassHelper.OBJECT_TYPE, name);
     }
 
+    /**
+     * Add a parameter to the method signature.
+     * @param type The type of the parameter
+     * @param name The name of the parameter
+     */
     public T param(ClassNode type, String name) {
         return param(new Parameter(type, name));
     }
 
+    /**
+     * Add a parameter to the method signature with an optional default value.
+     * @param type The type of the parameter
+     * @param name The name of the parameter
+     * @param defaultValue An expression to use for the default value for the parameter. Can be null.
+     */
     public T param(ClassNode type, String name, Expression defaultValue) {
         return param(new Parameter(type, name, defaultValue));
     }
 
+    /**
+     * Adds an array parameter with the given type.
+     * @param type The type of the array elements
+     * @param name The name of the parameter
+     */
     public T arrayParam(ClassNode type, String name) {
         return param(new Parameter(type.makeArray(), name));
     }
 
-    public T cloneParamsFrom(MethodNode methods) {
-        Parameter[] sourceParams = GeneralUtils.cloneParams(methods.getParameters());
+    /**
+     * Use all parameters of the given source method as parameters to this method.
+     * @param sourceMethod The source of the parameter list
+     */
+    public T cloneParamsFrom(MethodNode sourceMethod) {
+        Parameter[] sourceParams = GeneralUtils.cloneParams(sourceMethod.getParameters());
         for (Parameter parameter : sourceParams) {
             param(parameter);
         }
         return (T)this;
     }
 
+    /**
+     * Add custom metadata to the created AST node of the methods
+     * @param key The key of the metadata
+     * @param value The name of the metadata
+     */
     public T withMetadata(Object key, Object value) {
         metadata.put(key, value);
         return (T)this;
     }
 
 
+    /**
+     * Creates a closure parameter that includes a OWNER_ONLY strategy.
+     */
+    public T passThroughClosureParam() {
+        Parameter param = GeneralUtils.param(
+                nonGeneric(ClassHelper.CLOSURE_TYPE),
+                "closure"
+        );
+
+        AnnotationNode annotation = new AnnotationNode(DELEGATES_TO_ANNOTATION);
+        annotation.setMember("strategy", constX(Closure.OWNER_ONLY));
+        param.addAnnotation(annotation);
+        return param(param);
+    }
+
+    /**
+     * Creates a closure parameter that includes a DELEGATE_ONLY strategy.
+     * @param delegationTarget The target type to set
+     * @param defaultValue The default value of the param
+     */
     public T delegatingClosureParam(ClassNode delegationTarget, ClosureDefaultValue defaultValue) {
-        return delegatingClosureParam(delegationTarget, defaultValue, Closure.DELEGATE_ONLY);
-    }
-
-    public T passThroughClosureParam(ClassNode delegationTarget, ClosureDefaultValue defaultValue) {
-        return delegatingClosureParam(delegationTarget, defaultValue, Closure.OWNER_ONLY);
-    }
-
-    public T delegatingClosureParam(ClassNode delegationTarget, ClosureDefaultValue defaultValue, int delegationStrategy) {
         ClosureExpression emptyClosure = null;
         if (defaultValue == ClosureDefaultValue.EMPTY_CLOSURE) {
             emptyClosure = closureX(block());
@@ -243,10 +335,13 @@ public abstract class GenericsMethodBuilder<T extends GenericsMethodBuilder> {
                 "closure",
                 emptyClosure
         );
-        param.addAnnotation(createDelegatesToAnnotation(delegationTarget, delegationStrategy));
+        param.addAnnotation(createDelegatesToAnnotation(delegationTarget, Closure.DELEGATE_ONLY));
         return param(param);
     }
 
+    /**
+     * Creates a delegating closure parameter that delegates to the type parameter of an existing class parameter.
+     */
     public T delegatingClosureParam() {
         return delegatingClosureParam(null, ClosureDefaultValue.EMPTY_CLOSURE);
     }
