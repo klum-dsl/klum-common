@@ -58,6 +58,7 @@ import org.codehaus.groovy.transform.AbstractASTTransformation;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +66,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import static groovyjarjarasm.asm.Opcodes.ACC_ABSTRACT;
+import static groovyjarjarasm.asm.Opcodes.ACC_FINAL;
 import static org.codehaus.groovy.ast.ClassHelper.STRING_TYPE;
 import static org.codehaus.groovy.ast.ClassHelper.makeWithoutCaching;
 import static org.codehaus.groovy.ast.expr.CastExpression.asExpression;
@@ -294,6 +296,8 @@ public class CommonAstHelper {
     }
 
     public static List<ClassNode> findAllKnownSubclassesOf(ClassNode type, CompileUnit compileUnit) {
+        if ((type.getModifiers() & ACC_FINAL) != 0)
+            return Collections.emptyList();
         List<ClassNode> result = new ArrayList<ClassNode>();
 
         for (ClassNode classInCU : (List<ClassNode>) compileUnit.getClasses())
