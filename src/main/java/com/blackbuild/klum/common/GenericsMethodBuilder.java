@@ -315,7 +315,6 @@ public abstract class GenericsMethodBuilder<T extends GenericsMethodBuilder> {
         );
 
         AnnotationNode annotation = new AnnotationNode(DELEGATES_TO_ANNOTATION);
-        annotation.setMember("value", classX(ClassHelper.OBJECT_TYPE));
         annotation.setMember("strategy", constX(Closure.OWNER_ONLY));
         param.addAnnotation(annotation);
         return param(param);
