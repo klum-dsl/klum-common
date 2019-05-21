@@ -28,6 +28,7 @@ import org.codehaus.groovy.ast.AnnotatedNode;
 import org.codehaus.groovy.ast.AnnotationNode;
 import org.codehaus.groovy.ast.ClassHelper;
 import org.codehaus.groovy.ast.ClassNode;
+import org.codehaus.groovy.ast.CompileUnit;
 import org.codehaus.groovy.ast.FieldNode;
 import org.codehaus.groovy.ast.GenericsType;
 import org.codehaus.groovy.ast.MethodNode;
@@ -289,9 +290,13 @@ public class CommonAstHelper {
     }
 
     public static List<ClassNode> findAllKnownSubclassesOf(ClassNode type) {
+        return findAllKnownSubclassesOf(type, type.getCompileUnit());
+    }
+
+    public static List<ClassNode> findAllKnownSubclassesOf(ClassNode type, CompileUnit compileUnit) {
         List<ClassNode> result = new ArrayList<ClassNode>();
 
-        for (ClassNode classInCU : (List<ClassNode>) type.getCompileUnit().getClasses())
+        for (ClassNode classInCU : (List<ClassNode>) compileUnit.getClasses())
             if (classInCU.isDerivedFrom(type))
                 result.add(classInCU);
         return result;
