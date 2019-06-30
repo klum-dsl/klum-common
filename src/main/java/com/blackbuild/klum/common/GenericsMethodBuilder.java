@@ -240,8 +240,18 @@ public abstract class GenericsMethodBuilder<T extends GenericsMethodBuilder> {
      * @param name The name of the parameter.
      * @param addIfNotNull If this parameter is null, the method does nothing
      */
+    @Deprecated
     public T optionalStringParam(String name, Object addIfNotNull) {
-        if (addIfNotNull != null)
+        return optionalStringParam(name, addIfNotNull != null);
+    }
+
+    /**
+     * Convenience method to optionally add a string parameter. The parameter is only added, if 'addIfNotNull' is not null.
+     * @param name The name of the parameter.
+     * @param addIfNotNull If this parameter is null, the method does nothing
+     */
+    public T optionalStringParam(String name, boolean doAdd) {
+        if (doAdd)
             stringParam(name);
         return (T)this;
     }
@@ -366,6 +376,12 @@ public abstract class GenericsMethodBuilder<T extends GenericsMethodBuilder> {
 
     public T declareVariable(String varName, Expression init) {
         return statement(GeneralUtils.declS(varX(varName), init));
+    }
+
+    public T optionalDeclareVariable(String varName, Expression init, boolean doAdd) {
+        if (doAdd)
+            statement(GeneralUtils.declS(varX(varName), init));
+        return (T)this;
     }
 
     public T callMethod(Expression receiver, String methodName) {
