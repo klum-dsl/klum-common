@@ -113,11 +113,11 @@ public class CommonAstHelper {
         return new ListExpression(Arrays.asList(expressions));
     }
 
-    static ArgumentListExpression argsWithOptionalKey(FieldNode keyField, String... otherArgs) {
-        if (keyField == null)
+    static ArgumentListExpression argsWithOptionalKey(String keyFieldName, String... otherArgs) {
+        if (keyFieldName == null)
             return args(otherArgs);
 
-        ArgumentListExpression result = new ArgumentListExpression(varX("key"));
+        ArgumentListExpression result = new ArgumentListExpression(varX(keyFieldName));
 
         for (String next : otherArgs)
             result.addExpression(varX(next));
@@ -125,11 +125,11 @@ public class CommonAstHelper {
         return result;
     }
 
-    public static ArgumentListExpression argsWithEmptyMapAndOptionalKey(AnnotatedNode keyField, String... otherArgs) {
+    public static ArgumentListExpression argsWithEmptyMapAndOptionalKey(String keyFieldName, String... otherArgs) {
         ArgumentListExpression result = new ArgumentListExpression(new MapExpression());
 
-        if (keyField != null)
-            result.addExpression(varX("key"));
+        if (keyFieldName != null)
+            result.addExpression(varX(keyFieldName));
 
         for (String next : otherArgs)
             result.addExpression(varX(next));
@@ -137,13 +137,13 @@ public class CommonAstHelper {
         return result;
     }
 
-    public static ArgumentListExpression argsWithEmptyMapClassAndOptionalKey(AnnotatedNode keyField, String... otherArgs) {
+    public static ArgumentListExpression argsWithEmptyMapClassAndOptionalKey(String keyFieldName, String... otherArgs) {
         ArgumentListExpression result = new ArgumentListExpression(new MapExpression());
 
         result.addExpression(varX("typeToCreate"));
 
-        if (keyField != null)
-            result.addExpression(varX("key"));
+        if (keyFieldName != null)
+            result.addExpression(varX(keyFieldName));
 
         for (String next : otherArgs)
             result.addExpression(varX(next));
