@@ -208,13 +208,13 @@ public class CommonAstHelper {
         target.addMethod(method);
     }
 
-    public static ClosureExpression toStronglyTypedClosure(ClosureExpression validationClosure, ClassNode fieldNodeType) {
+    public static ClosureExpression toStronglyTypedClosure(ClosureExpression validationClosure, ClassNode parameterType) {
         String closureParameterName = validationClosure.isParameterSpecified() ? validationClosure.getParameters()[0].getName() : "it";
-        ClosureExpression typeValidationClosure = closureX(params(param(fieldNodeType, closureParameterName)), validationClosure.getCode());
+        ClosureExpression typeValidationClosure = closureX(params(param(parameterType.getPlainNodeReference(), closureParameterName)), validationClosure.getCode());
         typeValidationClosure.copyNodeMetaData(validationClosure);
         typeValidationClosure.setSourcePosition(validationClosure);
 
-        typeValidationClosure.visit(new StronglyTypingClosureParameterVisitor(closureParameterName, fieldNodeType));
+        typeValidationClosure.visit(new StronglyTypingClosureParameterVisitor(closureParameterName, parameterType.getPlainNodeReference()));
         return typeValidationClosure;
     }
 
